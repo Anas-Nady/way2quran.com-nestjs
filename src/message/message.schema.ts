@@ -2,16 +2,19 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
 @Schema({ timestamps: true })
 export class Message {
-  @Prop({ required: true })
+  @Prop({ type: String, required: true })
   senderName: string;
 
-  @Prop({ required: true })
+  @Prop({ type: String, required: true })
   senderEmail: string;
 
-  @Prop({ required: true })
+  @Prop({ type: String, required: true })
+  slug: string;
+
+  @Prop({ type: String, required: true })
   content: string;
 
-  @Prop({ default: false })
+  @Prop({ type: Boolean, default: false })
   isRead: boolean;
 }
 

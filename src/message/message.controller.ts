@@ -12,6 +12,7 @@ import { MessageService } from './message.service';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { AuthGuard } from '@nestjs/passport';
 import type { Query as QueryType } from 'express-serve-static-core';
+import { SendMessageDto } from './dto/send-message.dto';
 
 @Controller('messages')
 export class MessageController {
@@ -23,14 +24,26 @@ export class MessageController {
   }
 
   @Get()
-  // @UseGuards(AuthGuard())
+  @UseGuards(AuthGuard('jwt'))
   findAll(@Query() query: QueryType) {
     return this.messageService.findAllMessages(query);
   }
 
-  @Delete(':id')
-  @UseGuards(AuthGuard())
-  remove(@Param('id') id: string) {
-    return this.messageService.deleteMessage(id);
+  @Get('unread')
+  @UseGuards(AuthGuard('jwt'))
+  findUnread() {
+    return this.messageService.getUnreadMessages();
+  }
+
+  @Post('send-message')
+  @UseGuards(AuthGuard('jwt'))
+  sendMessage(@Body() sendMessageDto: SendMessageDto) {
+    return this.messageService.sendMessageToClient(sendMessageDto);
+  }
+
+  @Delete('delete/:slug')
+  @UseGuards(AuthGuard('jwt'))
+  remove(@Param('slug') slug: string) {
+    return this.messageService.deleteMessage(slug);
   }
 }
