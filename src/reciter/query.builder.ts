@@ -48,10 +48,12 @@ const searchQuery = function (search: string) {
 
   return {
     $or: [
-      { englishName: new RegExp(trimmedSearch, 'i') },
-      { arabicName: new RegExp(new RegExp(trimmedSearch, 'i')) },
-      { arabicName: new RegExp(trimmedSearch.replace(/ا/, 'أ'), 'i') },
-      { arabicName: new RegExp(trimmedSearch.replace(/ا/, 'إ'), 'i') },
+      {
+        englishName: new RegExp(trimmedSearch, 'i'),
+      },
+      {
+        arabicName: new RegExp(trimmedSearch.replace(/ا/g, '[اأإآ]'), 'i'),
+      },
     ],
   };
 };
