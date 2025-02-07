@@ -1,7 +1,6 @@
 import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
 
 export class UpdateAuthDto {
-  @IsOptional()
   @IsEmail({}, { message: 'Please enter a valid email address.' })
   currentEmail: string;
 
