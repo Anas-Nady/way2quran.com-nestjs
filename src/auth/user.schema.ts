@@ -2,16 +2,16 @@ import { Schema, Prop, SchemaFactory } from '@nestjs/mongoose';
 
 @Schema()
 export class User {
-  @Prop({ required: true, trim: true })
+  @Prop({ type: String, required: true, trim: true })
   name: string;
 
-  @Prop({ required: true, trim: true, unique: true })
+  @Prop({ type: String, required: true, trim: true, unique: true })
   email: string;
 
-  @Prop({ required: true, select: false })
+  @Prop({ type: String, required: true, select: false })
   password: string;
 
-  @Prop({ default: false })
+  @Prop({ type: Boolean, default: false })
   isAdmin: boolean;
 }
 
