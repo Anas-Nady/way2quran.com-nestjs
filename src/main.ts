@@ -7,7 +7,8 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.use(express.json({ limit: '1000mb' }));
   app.useGlobalPipes(new ValidationPipe());
+  app.setGlobalPrefix('api');
   app.enableCors();
-  await app.listen(5000);
+  await app.listen(4000);
 }
 bootstrap();
