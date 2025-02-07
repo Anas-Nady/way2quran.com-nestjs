@@ -2,16 +2,16 @@ import { Schema, Prop, SchemaFactory } from '@nestjs/mongoose';
 
 @Schema()
 export class Recitation {
-  @Prop()
+  @Prop({ type: String, required: true })
   arabicName: string;
 
-  @Prop()
+  @Prop({ type: String, required: true })
   englishName: string;
 
-  @Prop({ index: true })
+  @Prop({ type: String, required: true, index: true })
   slug: string;
 
-  @Prop({ default: 0 })
+  @Prop({ type: Number, default: 0 })
   totalListeners: number;
 }
 
