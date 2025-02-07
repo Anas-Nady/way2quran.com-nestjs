@@ -86,9 +86,12 @@ export class AuthService {
         user.password = hashedPassword;
       }
 
-      await user.save();
+      const updatedUser = await user.save();
 
-      return { message: 'Your account has been updated successfully.' };
+      return {
+        message: 'Your account has been updated successfully.',
+        userEmail: updatedUser.email,
+      };
     } catch (error) {
       throw new HttpException(
         `Failed to update user: ${error.message}`,
