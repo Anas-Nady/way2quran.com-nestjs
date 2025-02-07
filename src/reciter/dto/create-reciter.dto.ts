@@ -1,9 +1,9 @@
-import { IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateReciterDto {
-  @IsString()
+  @IsNumber()
   @IsOptional()
-  number: number;
+  number?: number;
 
   @IsNotEmpty()
   @IsString()
@@ -12,16 +12,4 @@ export class CreateReciterDto {
   @IsNotEmpty()
   @IsString()
   englishName: string;
-
-  @IsNotEmpty()
-  @IsString()
-  slug: string;
-
-  @IsNotEmpty()
-  @IsString()
-  photo: string;
-
-  @IsNotEmpty()
-  @IsBoolean()
-  isTopReciter: boolean;
 }

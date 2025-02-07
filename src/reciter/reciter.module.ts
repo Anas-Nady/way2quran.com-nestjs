@@ -25,5 +25,6 @@ import { Recitation, RecitationSchema } from 'src/recitation/recitation.schema';
   ],
   controllers: [ReciterController],
   providers: [ReciterService],
+  exports: [MongooseModule],
 })
 export class ReciterModule {}
