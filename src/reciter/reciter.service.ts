@@ -271,17 +271,23 @@ export class ReciterService {
         // ignore this file if its exist in the recitation.
         if (isSurahExists) continue;
 
-        // upload file if not already uploaded
         try {
+          const currentSurah = await this.Surah.findOne({
+            number: surahNumber,
+          });
+
+          if (!currentSurah) {
+            throw new NotFoundException(
+              `Surah is not exists with the number: ${surahNumber}`,
+            );
+          }
+
+          // upload file if not already uploaded
           const uploadAudioFile = await this.uploadFileToGCS(
             audioFile,
             `${reciterSlug}/${recitationSlug}`,
             audioFile.originalname.split('.')[0],
           );
-
-          const currentSurah = await this.Surah.findOne({
-            number: surahNumber,
-          });
 
           // add the uploaded file to recitationToUpdate array.
           recitationToUpdate.audioFiles.push({
