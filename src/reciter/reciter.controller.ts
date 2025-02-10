@@ -165,19 +165,6 @@ export class ReciterController {
     return this.reciterService.updateReciter(slug, updateReciterDto, photo);
   }
 
-  @Get('download-recitation/:reciterSlug/:recitationSlug')
-  downloadRecitation(
-    @Param('reciterSlug') reciterSlug: string,
-    @Param('recitationSlug') recitationSlug: string,
-    @Res() res: Response,
-  ) {
-    return this.reciterService.downloadRecitation(
-      reciterSlug,
-      recitationSlug,
-      res,
-    );
-  }
-
   @Delete('delete-reciter/:slug')
   @UseGuards(AuthGuard('jwt'))
   deleteReciter(@Param('slug') reciterSlug: string) {
