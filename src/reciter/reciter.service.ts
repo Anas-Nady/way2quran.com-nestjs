@@ -12,10 +12,9 @@ import { AudioFile, Reciter } from './reciter.schema';
 import type { Model } from 'mongoose';
 import { Storage } from '@google-cloud/storage';
 import * as path from 'path';
-import type { Query, Response } from 'express-serve-static-core';
+import type { Query } from 'express-serve-static-core';
 import { Recitation } from 'src/recitation/recitation.schema';
 import { Surah } from 'src/surah/surah.schema';
-import * as archiver from 'archiver';
 import {
   completedRecitations,
   hafsAnAsim,
@@ -26,6 +25,12 @@ import {
 } from './query.builder';
 import * as fs from 'fs';
 import slugify from 'slugify';
+
+interface UploadFileProps {
+  fileToUpload: Express.Multer.File;
+  folderName: string;
+  fileName: string;
+}
 
 @Injectable()
 export class ReciterService {
@@ -68,11 +73,11 @@ export class ReciterService {
   }
 
   // Helper method to upload a file to Google Cloud Storage
-  private async uploadFileToGCS(
-    fileToUpload: Express.Multer.File,
-    folderName: string,
-    fileName: string,
-  ): Promise<{ publicURL: string; downloadURL: string }> {
+  private async uploadFileToGCS({
+    fileToUpload,
+    folderName,
+    fileName,
+  }: UploadFileProps): Promise<{ publicURL: string; downloadURL: string }> {
     const fileExtension = fileToUpload.originalname.split('.').pop();
     const filePath = `${folderName}/${fileName}.${fileExtension}`;
     const file = this.storage.bucket(this.bucketName).file(filePath);
@@ -174,11 +179,11 @@ export class ReciterService {
       // Handle photo upload if provided
       if (photo) {
         try {
-          const uploadPhoto = await this.uploadFileToGCS(
-            photo,
-            'imgs',
-            newReciter.slug,
-          );
+          const uploadPhoto = await this.uploadFileToGCS({
+            fileToUpload: photo,
+            folderName: 'imgs',
+            fileName: newReciter.slug,
+          });
           newReciter.photo = uploadPhoto.publicURL;
         } catch (error) {
           // Fallback to default photo if upload fails
@@ -250,13 +255,14 @@ export class ReciterService {
           totalDownloads: 0,
         };
       }
+      // fetch all surahs list
+      const surahsList = await this.Surah.find({}).select('number');
 
       // upload audio files to google cloud storage
       for (const audioFile of audioFiles) {
-        const surahNumber = audioFile.originalname.split('.')[0];
+        const surahNumber = parseInt(audioFile.originalname.split('.')[0]);
 
-        const isSurahNumberValid =
-          parseInt(surahNumber) >= 1 && parseInt(surahNumber) <= 144;
+        const isSurahNumberValid = surahNumber >= 1 && surahNumber <= 144;
 
         if (!isSurahNumberValid) {
           throw new BadRequestException(
@@ -265,16 +271,16 @@ export class ReciterService {
         }
 
         const isSurahExists = recitationToUpdate.audioFiles.some(
-          (surah: AudioFile) => surah.surahNumber === parseInt(surahNumber),
+          (surah: AudioFile) => surah.surahNumber === surahNumber,
         );
 
         // ignore this file if its exist in the recitation.
         if (isSurahExists) continue;
 
         try {
-          const currentSurah = await this.Surah.findOne({
-            number: surahNumber,
-          });
+          const currentSurah = surahsList.find(
+            (surah) => surah.number === surahNumber,
+          );
 
           if (!currentSurah) {
             throw new NotFoundException(
@@ -283,11 +289,11 @@ export class ReciterService {
           }
 
           // upload file if not already uploaded
-          const uploadAudioFile = await this.uploadFileToGCS(
-            audioFile,
-            `${reciterSlug}/${recitationSlug}`,
-            audioFile.originalname.split('.')[0],
-          );
+          const uploadAudioFile = await this.uploadFileToGCS({
+            fileToUpload: audioFile,
+            folderName: `${reciterSlug}/${recitationSlug}`,
+            fileName: audioFile.originalname.split('.')[0],
+          });
 
           // add the uploaded file to recitationToUpdate array.
           recitationToUpdate.audioFiles.push({
@@ -366,11 +372,11 @@ export class ReciterService {
       }
 
       try {
-        const uploadZip = await this.uploadFileToGCS(
-          zipFile,
-          'zip-files',
-          `${reciterSlug}/${recitationSlug}`,
-        );
+        const uploadZip = await this.uploadFileToGCS({
+          fileToUpload: zipFile,
+          folderName: 'zip-files',
+          fileName: `${reciterSlug}/${recitationSlug}`,
+        });
 
         // save downloadURL to the selected recitation in MongoDB
         const recitationIndex = reciter.recitations.findIndex(
@@ -537,11 +543,11 @@ export class ReciterService {
 
       if (photo) {
         try {
-          const uploadPhoto = await this.uploadFileToGCS(
-            photo,
-            'imgs',
-            reciter.slug,
-          );
+          const uploadPhoto = await this.uploadFileToGCS({
+            fileToUpload: photo,
+            folderName: 'imgs',
+            fileName: reciter.slug,
+          });
           reciter.photo = uploadPhoto.publicURL;
           await reciter.save();
         } catch (error) {
