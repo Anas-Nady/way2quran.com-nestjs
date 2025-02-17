@@ -123,19 +123,32 @@ export class ReciterService {
   }
 
   // Helper method to delete a file from Google Cloud Storage
-  private async deleteFileFromGCS(prefix: string): Promise<boolean> {
+  private async deleteFilesFromGCS(prefix: string): Promise<void> {
     try {
       const [files] = await this.storage
         .bucket(this.bucketName)
         .getFiles({ prefix });
 
       if (files.length) {
-        await Promise.all(files.map((file) => file.delete()));
+        await Promise.all(
+          files.map(async (file) => {
+            try {
+              const [exists] = await file.exists();
+              if (exists) {
+                await file.delete();
+              }
+            } catch (error) {
+              throw new HttpException(
+                `Error deleting file ${file.name}: ${JSON.stringify(error)}`,
+                error.status,
+              );
+            }
+          }),
+        );
       }
-      return true;
     } catch (error) {
       throw new InternalServerErrorException(
-        `Failed to upload file to Google Cloud Storage: ${error.message}`,
+        `Failed to delete file from Google Cloud Storage: ${error.message}`,
       );
     }
   }
@@ -604,18 +617,11 @@ export class ReciterService {
 
       if (reciter.photo !== this.defaultReciterPhoto) {
         const photoPath = reciter.photo.split(`${this.bucketName}/`)[1];
-        try {
-          await this.deleteFileFromGCS(photoPath);
-        } catch (error) {
-          throw new HttpException(
-            `Failed to delete reciter photo: ${error.message}`,
-            error.status,
-          );
-        }
+        await this.deleteFilesFromGCS(photoPath);
       }
 
       // Delete all recitations from Google Storage
-      await this.deleteFileFromGCS(slug);
+      await this.deleteFilesFromGCS(slug);
 
       // Delete all ZIP files related to the reciter’s recitations
       if (reciter.recitations.length > 0) {
@@ -626,16 +632,9 @@ export class ReciterService {
             );
 
             if (recitation) {
-              try {
-                await this.deleteFileFromGCS(
-                  `zip-files/${reciter.slug}/${recitation.slug}.zip`,
-                );
-              } catch (error) {
-                throw new HttpException(
-                  `Failed to remove zip file: ${error.message}`,
-                  error.status,
-                );
-              }
+              await this.deleteFilesFromGCS(
+                `zip-files/${reciter.slug}/${recitation.slug}.zip`,
+              );
             }
           }),
         );
@@ -681,18 +680,11 @@ export class ReciterService {
       // Delete audio files
       const folderPath = `${slug}/${recitationSlug}`;
 
-      await this.deleteFileFromGCS(folderPath);
+      await this.deleteFilesFromGCS(folderPath);
 
       // Delete the ZIP file if it exists
       const zipFilePath = `zip-files/${slug}/${recitationSlug}.zip`;
-      try {
-        await this.deleteFileFromGCS(zipFilePath);
-      } catch (error) {
-        throw new HttpException(
-          `Failed to remove ${zipFilePath} from GCS.: ${error.message}`,
-          error.status,
-        );
-      }
+      await this.deleteFilesFromGCS(zipFilePath);
 
       // delete from MongoDB
       reciter.recitations = reciter.recitations.filter(
@@ -748,15 +740,7 @@ export class ReciterService {
 
       // Delete surah from google storage
       const filePath = `${slug}/${recitationSlug}/${audioName}`;
-
-      try {
-        await this.deleteFileFromGCS(filePath);
-      } catch (error) {
-        throw new HttpException(
-          `Failed to remove the Surah.: ${error.message}`,
-          error.status,
-        );
-      }
+      await this.deleteFilesFromGCS(filePath);
 
       const recitationEntry = reciter.recitations.find(
         (rec) => rec.recitationInfo.toString() === recitation._id.toString(),
